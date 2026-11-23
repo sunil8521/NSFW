@@ -32,6 +32,18 @@ interface QualityLevel {
   label: string;
 }
 
+// Helper to format seconds into mm:ss or hh:mm:ss
+function formatTime(seconds: number): string {
+  if (isNaN(seconds) || seconds < 0) return "0:00";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = Math.floor(seconds % 60);
+  if (h > 0) {
+    return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  }
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
 export default function HlsCustomPlayer({
   src,
   poster,
@@ -39,44 +51,68 @@ export default function HlsCustomPlayer({
   theaterMode = false,
   onToggleTheater,
 }: HlsCustomPlayerProps) {
+  // DOM Refs (prevents high-frequency re-renders during playback & scrubbing)
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
 
-  // Playback states
+  // High-frequency timeline refs (Direct DOM manipulation = 0 re-renders during playback!)
+  const playedBarRef = useRef<HTMLDivElement>(null);
+  const bufferedBarRef = useRef<HTMLDivElement>(null);
+  const rangeInputRef = useRef<HTMLInputElement>(null);
+  const timeTextRef = useRef<HTMLSpanElement>(null);
+  const hoverTooltipRef = useRef<HTMLDivElement>(null);
+  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Discrete, low-frequency UI states (only re-render on actual state changes)
   const [isPlaying, setIsPlaying] = useState(false);
-  const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(0);
-  const [bufferedPercent, setBufferedPercent] = useState(0);
-  const [volume, setVolume] = useState(1);
+  const [isBuffering, setIsBuffering] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(1);
   const [playbackRate, setPlaybackRate] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [isBuffering, setIsBuffering] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Quality levels (HLS)
+  // HLS Quality levels
   const [qualityLevels, setQualityLevels] = useState<QualityLevel[]>([]);
   const [currentQuality, setCurrentQuality] = useState<number>(-1); // -1 = Auto
 
-  // UI state
+  // Controls visibility
   const [showControls, setShowControls] = useState(true);
   const [showSettingsMenu, setShowSettingsMenu] = useState(false);
-  const [hoverTime, setHoverTime] = useState<number | null>(null);
-  const [hoverPosition, setHoverPosition] = useState<number>(0);
-  const controlsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Format time (mm:ss or hh:mm:ss)
-  const formatTime = (seconds: number) => {
-    if (isNaN(seconds) || seconds < 0) return "0:00";
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    if (h > 0) {
-      return `${h}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  // High-performance time update (Direct DOM — No React re-render!)
+  const updateTimelineUI = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const current = video.currentTime;
+    const duration = video.duration || 0;
+    const progressPercent = duration > 0 ? (current / duration) * 100 : 0;
+
+    // 1. Update played progress bar
+    if (playedBarRef.current) {
+      playedBarRef.current.style.width = `${progressPercent}%`;
     }
-    return `${m}:${s.toString().padStart(2, "0")}`;
-  };
+
+    // 2. Update scrubber range input value
+    if (rangeInputRef.current) {
+      rangeInputRef.current.value = String(current);
+      if (duration > 0) rangeInputRef.current.max = String(duration);
+    }
+
+    // 3. Update buffered bar
+    if (bufferedBarRef.current && video.buffered.length > 0 && duration > 0) {
+      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+      const bufPercent = Math.min(100, (bufferedEnd / duration) * 100);
+      bufferedBarRef.current.style.width = `${bufPercent}%`;
+    }
+
+    // 4. Update time text
+    if (timeTextRef.current) {
+      timeTextRef.current.textContent = `${formatTime(current)} / ${formatTime(duration)}`;
+    }
+  }, []);
 
   // Initialize HLS / Native Video
   useEffect(() => {
@@ -144,23 +180,11 @@ export default function HlsCustomPlayer({
     ) {
       // Native Safari HLS
       video.src = src;
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          setIsBuffering(false);
-        },
-        { once: true }
-      );
+      video.addEventListener("loadedmetadata", () => setIsBuffering(false), { once: true });
     } else {
       // Progressive direct video (MP4 / WebM / MKV)
       video.src = src;
-      video.addEventListener(
-        "loadedmetadata",
-        () => {
-          setIsBuffering(false);
-        },
-        { once: true }
-      );
+      video.addEventListener("loadedmetadata", () => setIsBuffering(false), { once: true });
     }
 
     return () => {
@@ -189,36 +213,34 @@ export default function HlsCustomPlayer({
     }
   }, []);
 
-  // Update time and buffer progress
-  const handleTimeUpdate = () => {
-    const video = videoRef.current;
-    if (!video) return;
-    setCurrentTime(video.currentTime);
-
-    // Calculate buffer
-    if (video.buffered.length > 0 && video.duration > 0) {
-      const bufferedEnd = video.buffered.end(video.buffered.length - 1);
-      setBufferedPercent((bufferedEnd / video.duration) * 100);
-    }
-  };
-
-  // Seek bar scrub
+  // Scrubber Seek
   const handleSeek = (e: React.ChangeEvent<HTMLInputElement>) => {
     const video = videoRef.current;
     if (!video) return;
     const target = parseFloat(e.target.value);
     video.currentTime = target;
-    setCurrentTime(target);
+    updateTimelineUI();
   };
 
-  // Timeline hover preview
+  // High-performance timeline hover preview (Direct DOM — 0 re-renders on mousemove!)
   const handleTimelineHover = (e: React.MouseEvent<HTMLDivElement>) => {
+    const video = videoRef.current;
+    const tooltip = hoverTooltipRef.current;
+    if (!video || !tooltip) return;
+
     const rect = e.currentTarget.getBoundingClientRect();
     const pos = (e.clientX - rect.left) / rect.width;
     const clampedPos = Math.max(0, Math.min(1, pos));
-    setHoverPosition(clampedPos * 100);
-    if (duration > 0) {
-      setHoverTime(clampedPos * duration);
+    const duration = video.duration || 0;
+
+    tooltip.style.left = `${clampedPos * 100}%`;
+    tooltip.textContent = formatTime(clampedPos * duration);
+    tooltip.style.opacity = "1";
+  };
+
+  const handleTimelineLeave = () => {
+    if (hoverTooltipRef.current) {
+      hoverTooltipRef.current.style.opacity = "0";
     }
   };
 
@@ -333,10 +355,12 @@ export default function HlsCustomPlayer({
         case "arrowleft":
           e.preventDefault();
           video.currentTime = Math.max(0, video.currentTime - 5);
+          updateTimelineUI();
           break;
         case "arrowright":
           e.preventDefault();
-          video.currentTime = Math.min(video.duration, video.currentTime + 5);
+          video.currentTime = Math.min(video.duration || 0, video.currentTime + 5);
+          updateTimelineUI();
           break;
         case "arrowup":
           e.preventDefault();
@@ -357,7 +381,7 @@ export default function HlsCustomPlayer({
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [togglePlay, volume, isMuted, onToggleTheater]);
+  }, [togglePlay, volume, isMuted, onToggleTheater, updateTimelineUI]);
 
   // Auto-hide controls
   const handleMouseMove = () => {
@@ -400,8 +424,8 @@ export default function HlsCustomPlayer({
         onClick={togglePlay}
         onPlay={() => setIsPlaying(true)}
         onPause={() => setIsPlaying(false)}
-        onTimeUpdate={handleTimeUpdate}
-        onDurationChange={(e) => setDuration(e.currentTarget.duration)}
+        onTimeUpdate={updateTimelineUI}
+        onDurationChange={updateTimelineUI}
         onWaiting={() => setIsBuffering(true)}
         onPlaying={() => setIsBuffering(false)}
         onWheel={(e) => {
@@ -475,39 +499,38 @@ export default function HlsCustomPlayer({
         <div
           className="relative group/timeline w-full h-4 flex items-center cursor-pointer"
           onMouseMove={handleTimelineHover}
-          onMouseLeave={() => setHoverTime(null)}
+          onMouseLeave={handleTimelineLeave}
         >
-          {/* Hover Time Tooltip */}
-          {hoverTime !== null && (
-            <div
-              className="absolute bottom-5 -translate-x-1/2 px-2 py-0.5 rounded bg-black/90 border border-zinc-700 text-[10px] font-mono text-white pointer-events-none"
-              style={{ left: `${hoverPosition}%` }}
-            >
-              {formatTime(hoverTime)}
-            </div>
-          )}
+          {/* Hover Time Tooltip (Driven directly by DOM style — 0 re-renders!) */}
+          <div
+            ref={hoverTooltipRef}
+            className="absolute bottom-5 -translate-x-1/2 px-2 py-0.5 rounded bg-black/90 border border-zinc-700 text-[10px] font-mono text-white pointer-events-none opacity-0 transition-opacity duration-75"
+          >
+            0:00
+          </div>
 
           {/* Background Track */}
           <div className="w-full h-1 group-hover/timeline:h-2 bg-zinc-700/60 rounded-full overflow-hidden transition-all relative">
-            {/* Buffered Bar */}
+            {/* Buffered Bar (Direct DOM update) */}
             <div
-              className="absolute left-0 top-0 bottom-0 bg-zinc-500/50 rounded-full transition-all"
-              style={{ width: `${bufferedPercent}%` }}
+              ref={bufferedBarRef}
+              className="absolute left-0 top-0 bottom-0 bg-zinc-500/50 rounded-full transition-all w-0"
             />
-            {/* Played Bar */}
+            {/* Played Bar (Direct DOM update) */}
             <div
-              className="absolute left-0 top-0 bottom-0 bg-accent rounded-full transition-all"
-              style={{ width: `${(currentTime / (duration || 1)) * 100}%` }}
+              ref={playedBarRef}
+              className="absolute left-0 top-0 bottom-0 bg-accent rounded-full transition-all w-0"
             />
           </div>
 
           {/* Hidden Range Input for full touch/mouse scrub precision */}
           <input
+            ref={rangeInputRef}
             type="range"
             min={0}
-            max={duration || 100}
+            max={100}
             step="any"
-            value={currentTime}
+            defaultValue={0}
             onChange={handleSeek}
             className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
@@ -555,9 +578,12 @@ export default function HlsCustomPlayer({
               />
             </div>
 
-            {/* Time Display */}
-            <span className="font-mono text-[11px] text-zinc-300 tracking-tight">
-              {formatTime(currentTime)} / {formatTime(duration)}
+            {/* Time Display (Direct DOM text content) */}
+            <span
+              ref={timeTextRef}
+              className="font-mono text-[11px] text-zinc-300 tracking-tight"
+            >
+              0:00 / 0:00
             </span>
           </div>
 
