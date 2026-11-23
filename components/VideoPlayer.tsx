@@ -152,6 +152,7 @@ export default function VideoPlayer({
                 alt={title}
                 fill
                 priority
+                referrerPolicy="no-referrer"
                 className="object-cover blur-xs scale-105 opacity-65"
                 unoptimized
               />

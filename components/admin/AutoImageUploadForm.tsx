@@ -331,6 +331,7 @@ export default function AutoImageUploadForm({
                 src={completedResult.thumbnailUrl || completedResult.directUrl || completedResult.pageUrl}
                 alt={completedResult.title}
                 fill
+                referrerPolicy="no-referrer"
                 className="object-cover"
                 unoptimized
               />

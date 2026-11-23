@@ -466,6 +466,7 @@ export default function PostForm({
                           alt={`Preview ${index + 1}`}
                           fill
                           unoptimized
+                          referrerPolicy="no-referrer"
                           className="object-cover"
                         />
                       </div>

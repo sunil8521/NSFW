@@ -166,6 +166,7 @@ export default async function AdminDashboardPage() {
                           alt={post.title}
                           fill
                           unoptimized
+                          referrerPolicy="no-referrer"
                           className="object-cover"
                         />
                       </div>

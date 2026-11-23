@@ -114,6 +114,7 @@ export default function UploadedImagesTable({
                         src={img.thumbnailUrl || img.directUrl || img.pageUrl}
                         alt={img.title || "Image"}
                         fill
+                        referrerPolicy="no-referrer"
                         className="object-cover"
                         sizes="56px"
                         unoptimized

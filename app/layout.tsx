@@ -16,6 +16,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
+  referrer: "no-referrer",
   title: "Desi Hot Pic — Trending Adult Photos & Streaming Videos",
   description:
     "Discover trending albums, high-definition photo galleries, and streaming videos on Desi Hot Pic. 18+ only.",
@@ -38,6 +39,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${spaceGrotesk.variable} ${inter.variable} h-full antialiased`}
     >
+      <head>
+        <meta name="referrer" content="no-referrer" />
+      </head>
       <body className="min-h-full flex flex-col bg-[#0a0a0a] text-[#f5f5f5] font-body">
         <SiteLayout>{children}</SiteLayout>
       </body>

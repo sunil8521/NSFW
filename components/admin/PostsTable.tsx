@@ -140,6 +140,7 @@ export default function PostsTable({ initialPosts }: { initialPosts: Post[] }) {
                           alt={post.title}
                           fill
                           unoptimized
+                          referrerPolicy="no-referrer"
                           className="object-cover"
                         />
                       </div>

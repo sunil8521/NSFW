@@ -35,6 +35,7 @@ export default function ImageGallery({ images }: { images: string[] }) {
               src={src}
               alt={`Photo ${i + 1}`}
               fill
+              referrerPolicy="no-referrer"
               className="object-cover transition-transform duration-300 group-hover:scale-105"
               sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             />
@@ -88,6 +89,7 @@ export default function ImageGallery({ images }: { images: string[] }) {
               src={images[activeIndex]}
               alt={`Photo ${activeIndex + 1}`}
               fill
+              referrerPolicy="no-referrer"
               className="object-contain"
               sizes="90vw"
               priority
