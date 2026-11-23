@@ -43,6 +43,20 @@ export interface UploadedVideoItem {
   createdAt: string;
 }
 
+export interface UploadedImageItem {
+  id: string;
+  title: string;
+  originalName: string;
+  size?: number;
+  mimeType?: string;
+  code: string;
+  pageUrl: string;
+  directUrl: string;
+  thumbnailUrl: string;
+  alternateUrls?: Record<string, string>;
+  createdAt: string;
+}
+
 let initialized = false;
 async function ensureInit() {
   if (initialized) return;
@@ -59,6 +73,7 @@ async function ensureInit() {
       mongoDb.collection("posts").createIndex({ "stats.likes": -1 }),
       mongoDb.collection("posts").createIndex({ uploadDate: -1 }),
       mongoDb.collection("uploaded_videos").createIndex({ createdAt: -1 }),
+      mongoDb.collection("uploaded_images").createIndex({ createdAt: -1 }),
     ]);
 
     initialized = true;
@@ -628,6 +643,50 @@ export const dbService = {
   async deleteUploadedVideo(id: string): Promise<boolean> {
     await ensureInit();
     const res = await mongoDb.collection("uploaded_videos").deleteOne({ id });
+    return res.deletedCount > 0;
+  },
+
+  async getUploadedImages(): Promise<UploadedImageItem[]> {
+    await ensureInit();
+    const docs = await mongoDb
+      .collection("uploaded_images")
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    return docs.map(({ _id, ...rest }: any) => rest as UploadedImageItem);
+  },
+
+  async getUploadedImageById(id: string): Promise<UploadedImageItem | null> {
+    await ensureInit();
+    const doc = await mongoDb.collection("uploaded_images").findOne({ id });
+    if (!doc) return null;
+    const { _id, ...rest } = doc;
+    return rest as UploadedImageItem;
+  },
+
+  async createUploadedImage(
+    item: Omit<UploadedImageItem, "id" | "createdAt"> & {
+      id?: string;
+      createdAt?: string;
+    }
+  ): Promise<UploadedImageItem> {
+    await ensureInit();
+    const image: UploadedImageItem = {
+      ...item,
+      id:
+        item.id ||
+        `img_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`,
+      createdAt: item.createdAt || new Date().toISOString(),
+    };
+
+    await mongoDb.collection("uploaded_images").insertOne({ ...image });
+    return image;
+  },
+
+  async deleteUploadedImage(id: string): Promise<boolean> {
+    await ensureInit();
+    const res = await mongoDb.collection("uploaded_images").deleteOne({ id });
     return res.deletedCount > 0;
   },
 };

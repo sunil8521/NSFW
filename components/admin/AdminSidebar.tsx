@@ -8,6 +8,7 @@ import {
   Film,
   PlusCircle,
   UploadCloud,
+  Image as ImageIcon,
   ExternalLink,
   X,
 } from "lucide-react";
@@ -15,7 +16,8 @@ import {
 const NAV_ITEMS = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "All Posts", href: "/admin/posts", icon: Film },
-  { name: "Auto Upload", href: "/admin/auto-upload", icon: UploadCloud },
+  { name: "Auto Video Upload", href: "/admin/auto-upload", icon: UploadCloud },
+  { name: "Auto Image Upload", href: "/admin/auto-upload-image", icon: ImageIcon },
   { name: "Upload Post", href: "/admin/posts/new", icon: PlusCircle },
 ];
 
