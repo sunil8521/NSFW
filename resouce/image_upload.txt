@@ -1,0 +1,74 @@
+Make your first request
+New keys expire after 90 days, and each account can have up to 10 active keys. Store your key securely and pass it in the Authorization header on requests to the main API.
+
+cURL
+curl --fail-with-body --silent --show-error \
+  -H "Authorization: Bearer $IMAGETWIST_API_KEY" \
+  'https://imagetwist.com/api/v1/galleries?limit=10'
+A response contains only galleries belonging to your account. Gallery 0 is the root upload destination.
+
+Example response
+{"data":[{"id":42,"parent_id":0,"name":"Portfolio"}],"next_after":null}
+Upload an image
+The Python example streams the file to storage, checks the receipt, and prints the image’s page link. It uses the Python standard library.
+
+Python
+python3 upload.py portrait.jpg --gallery 42
+Request a ticket. Send the filename, exact byte count and SHA-256 hex digest to POST /uploads. Include a unique Idempotency-Key header and keep that value until the upload finishes. Optionally set gallery_id and thumbnail_size.
+Send the file. From the receipt’s transfer object, POST the provided sess_id and count=1 as form data to batch_url. Take the ticket after BATCH: in the reply. POST multipart form data to upload_url with all returned fields, that batch ticket as it_batch, and the file as Filedata. Send the same batch ticket in the X-ImageTwist-Batch request header. Use only the transfer ticket on the storage server. The account API key stays on the main API. The example client accepts ImageTwist storage subdomains over HTTPS.
+Read the result. Call GET /uploads/{id} with the same API key. At complete, file.page_url contains the main ImageTwist link and file.alternate_page_urls maps each alternate domain to its HTTPS page for the same image. registered means the site recorded the image and is waiting for storage to confirm publication.
+JPEG, PNG, GIF and WebP are supported. Use an ASCII filename starting with a letter or digit. Its remaining characters can include letters, digits, spaces, periods, underscores and hyphens. Maximum length is 128 characters. The maximum size per image is the same as on the website for your current account tier (registered or premium). If a file is too large, HTTP 413 gives your limit in bytes. Your storage quota also applies. Accounts that require manual approval before publication cannot use this upload path. Thumbnail sizes are square at 100, 170, 250, 300, 350, 500 or 800 pixels. The default is 170x170.
+
+Choose a domain
+Use file.page_url for ImageTwist. For another domain, look it up by its exact hostname. For example, file.alternate_page_urls["imagexport.com"] gives the ImageXport page. All links open the same image.
+
+Completed upload, showing the file fields
+{
+  "file": {
+    "code": "a1b2c3d4e5f6",
+    "page_url": "https://imagetwist.com/a1b2c3d4e5f6",
+    "alternate_page_urls": {
+      "croea.com": "https://croea.com/a1b2c3d4e5f6",
+      "imagehaha.com": "https://imagehaha.com/a1b2c3d4e5f6",
+      "imagenimage.com": "https://imagenimage.com/a1b2c3d4e5f6",
+      "imagenpic.com": "https://imagenpic.com/a1b2c3d4e5f6",
+      "imageshimage.com": "https://imageshimage.com/a1b2c3d4e5f6",
+      "imagexport.com": "https://imagexport.com/a1b2c3d4e5f6",
+      "picshick.com": "https://picshick.com/a1b2c3d4e5f6",
+      "picturelol.com": "https://picturelol.com/a1b2c3d4e5f6"
+    }
+  }
+}
+Image detail returns these two link fields inside data. Image lists return them on each image inside data.
+
+Endpoint reference
+All paths are relative to https://imagetwist.com/api/v1.
+
+GET
+/galleries
+galleries:read · List your galleries with their IDs, names and parent IDs.
+
+GET
+/images
+images:read · List images with their main and alternate page links. Filter by gallery_id to see one gallery, or use 0 for the root.
+
+GET
+/images/{id}
+images:read · Get the filename, byte count, gallery ID, page_url and alternate_page_urls for an image in your account. Use the 12-character image code.
+
+POST
+/uploads
+images:write · A new ticket returns HTTP 201. Repeating the same request with the same key returns the saved receipt with HTTP 200.
+
+GET
+/uploads/{id}
+images:write · Read the status of a ticket using its 32-character ID and the key that issued it.
+
+Both list endpoints accept limit from 1 to 100, with a default of 25. If next_after contains a number, pass it as after on your next request with the same filter. A null cursor marks the last page.
+
+Limits & retries
+The API allows 120 authenticated requests per account per minute, shared across its keys. On a rate-limit response, wait the number of seconds in Retry-After. An account can have up to 25 pending tickets. Complete a pending upload or wait for a ticket to expire before requesting another.
+
+Tickets expire after 15 minutes. After a timeout, look up the receipt first. If it is registered, poll for completion. If the original creation response was lost, repeat the original metadata request and its Idempotency-Key. Reusing that key for different metadata returns HTTP 409. Retry protection lasts while the receipt is retained, at least 30 days under the supplied retention policy. A confirmed expired receipt requires a fresh ticket and request key.
+
+Errors contain a stable error.code and a readable error.message. HTTP 401 means the key could not authenticate. HTTP 403 means the permission or account policy prevents the action. HTTP 404 means the resource is unavailable to this key.
