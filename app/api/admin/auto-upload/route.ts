@@ -7,7 +7,7 @@ import path from "path";
 import os from "os";
 
 export const dynamic = "force-dynamic";
-export const maxDuration = 300; // 5 minutes (Maximum allowed on Vercel Hobby plan)
+export const maxDuration = 60; // 60 seconds (Compatible with Vercel Hobby plan)
 
 const STREAMTAPE_LOGIN = process.env.STREAMTAPE_LOGIN!;
 const STREAMTAPE_KEY = process.env.STREAMTAPE_KEY!;
