@@ -32,3 +32,31 @@ export function slugify(text: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
 }
+
+/**
+ * Resolves an image URL safely:
+ * - ImageTwist /th/ URLs are explicitly permitted for hotlinking on all websites
+ * - If preferThumbnail is true, converts /i/ URLs to /th/ URLs
+ * - Otherwise routes direct /i/ URLs through /api/image-proxy?url=...
+ */
+export function getSafeImageUrl(
+  url: string | undefined | null,
+  preferThumbnail = false
+): string {
+  if (!url) return "/logo.png";
+  if (!url.startsWith("http")) return url;
+
+  if (url.includes("imagetwist.com")) {
+    if (url.includes("/th/")) {
+      return url;
+    }
+    if (preferThumbnail && url.includes("/i/")) {
+      return url.replace(/\/i\/(\d+\/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+).*/, "/th/$1");
+    }
+    // Route full direct image through proxy to bypass hotlink referer checks
+    return `/api/image-proxy?url=${encodeURIComponent(url)}`;
+  }
+
+  return url;
+}
+

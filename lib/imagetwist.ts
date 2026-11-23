@@ -252,9 +252,13 @@ export async function uploadImageBufferToImageTwist({
     console.warn("Could not scrape direct CDN URLs from ImageTwist page; using pageUrl fallback", err);
   }
 
-  // Fallback: If no direct thumbnail was scraped, use directUrl or pageUrl
+  // Fallback: If no direct thumbnail was scraped, generate from directUrl
   if (!thumbnailUrl || thumbnailUrl === fileData.page_url) {
-    thumbnailUrl = directUrl;
+    if (directUrl && directUrl.includes("/i/")) {
+      thumbnailUrl = directUrl.replace(/\/i\/(\d+\/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+).*/, "/th/$1");
+    } else {
+      thumbnailUrl = directUrl;
+    }
   }
 
   const finalTitle =

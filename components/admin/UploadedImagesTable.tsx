@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { UploadedImageItem } from "@/lib/db";
 import { deleteUploadedImageAction } from "@/actions/image-upload";
+import { getSafeImageUrl } from "@/lib/utils";
 import {
   Copy,
   Check,
@@ -111,7 +112,7 @@ export default function UploadedImagesTable({
                   <td className="py-3 px-4">
                     <div className="relative w-14 h-14 rounded-xl overflow-hidden bg-black/60 border border-[#2a2a2a] shrink-0">
                       <Image
-                        src={img.thumbnailUrl || img.directUrl || img.pageUrl}
+                        src={getSafeImageUrl(img.thumbnailUrl || img.directUrl || img.pageUrl, true)}
                         alt={img.title || "Image"}
                         fill
                         referrerPolicy="no-referrer"

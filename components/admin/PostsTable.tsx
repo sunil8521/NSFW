@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { getSafeImageUrl } from "@/lib/utils";
 import {
   Search,
   Filter,
@@ -136,7 +137,7 @@ export default function PostsTable({ initialPosts }: { initialPosts: Post[] }) {
                     <div className="flex items-center gap-3">
                       <div className="relative w-14 h-10 rounded-lg overflow-hidden bg-black/40 border border-[#282828] shrink-0">
                         <Image
-                          src={post.thumbnailUrl}
+                          src={getSafeImageUrl(post.thumbnailUrl, true)}
                           alt={post.title}
                           fill
                           unoptimized

@@ -21,6 +21,7 @@ import {
 import { createPostAction, updatePostAction, type AdminPostInput } from "@/actions/admin";
 import { uploadImageFileAction } from "@/actions/image-upload";
 import type { Post } from "@/types/post";
+import { getSafeImageUrl } from "@/lib/utils";
 
 const CATEGORIES = [
   { slug: "desi", name: "Desi" },
@@ -462,7 +463,7 @@ export default function PostForm({
                     <div className="flex items-center gap-3 pt-1">
                       <div className="relative w-16 h-12 rounded overflow-hidden bg-black/40 border border-[#333]">
                         <Image
-                          src={link}
+                          src={getSafeImageUrl(link, true)}
                           alt={`Preview ${index + 1}`}
                           fill
                           unoptimized

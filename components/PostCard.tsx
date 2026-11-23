@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import type { Post } from "@/types/post";
-import { formatViews, formatDate } from "@/lib/utils";
+import { formatViews, formatDate, getSafeImageUrl } from "@/lib/utils";
 import { FaEye, FaImages, FaFilm } from "react-icons/fa6";
 import SaveButton from "@/components/SaveButton";
 
@@ -14,7 +14,7 @@ export default function PostCard({ post }: { post: Post }) {
       {/* Thumbnail */}
       <div className="relative aspect-[3/4] w-full shrink-0 overflow-hidden">
         <Image
-          src={post.thumbnailUrl}
+          src={getSafeImageUrl(post.thumbnailUrl, true)}
           alt={post.title}
           fill
           referrerPolicy="no-referrer"

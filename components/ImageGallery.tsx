@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Image from "next/image";
 import { X, ChevronLeft, ChevronRight, ZoomIn } from "lucide-react";
+import { getSafeImageUrl } from "@/lib/utils";
 
 export default function ImageGallery({ images }: { images: string[] }) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
@@ -32,7 +33,7 @@ export default function ImageGallery({ images }: { images: string[] }) {
             aria-label={`View photo ${i + 1}`}
           >
             <Image
-              src={src}
+              src={getSafeImageUrl(src, true)}
               alt={`Photo ${i + 1}`}
               fill
               referrerPolicy="no-referrer"
@@ -86,7 +87,7 @@ export default function ImageGallery({ images }: { images: string[] }) {
             onClick={(e) => e.stopPropagation()}
           >
             <Image
-              src={images[activeIndex]}
+              src={getSafeImageUrl(images[activeIndex], false)}
               alt={`Photo ${activeIndex + 1}`}
               fill
               referrerPolicy="no-referrer"

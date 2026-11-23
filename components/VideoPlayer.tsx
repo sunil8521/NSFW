@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import type { VideoLink } from "@/types/post";
 import HlsCustomPlayer from "./HlsCustomPlayer";
+import { getSafeImageUrl } from "@/lib/utils";
 import {
   Play,
   Server,
@@ -148,7 +149,7 @@ export default function VideoPlayer({
             /* Poster & Stream Launch Screen (protects page speed from 3rd party scripts until user plays) */
             <div className="absolute inset-0 z-20 flex flex-col items-center justify-center p-6 text-center select-none">
               <Image
-                src={poster}
+                src={getSafeImageUrl(poster, true)}
                 alt={title}
                 fill
                 priority
