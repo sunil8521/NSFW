@@ -6,10 +6,13 @@ import Footer from "@/components/Footer";
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname?.startsWith("/admin");
+  const isAuthOrAdmin =
+    pathname?.startsWith("/admin") ||
+    pathname === "/sign-in" ||
+    pathname === "/sign-up";
 
-  if (isAdmin) {
-    return <>{children}</>;
+  if (isAuthOrAdmin) {
+    return <main className="min-h-screen bg-[#0a0a0a]">{children}</main>;
   }
 
   return (

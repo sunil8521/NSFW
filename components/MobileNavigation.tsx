@@ -66,6 +66,7 @@ export default function MobileNavigation({
   const handleSignOut = async () => {
     await authClient.signOut();
     onClose();
+    window.location.href = "/";
   };
 
   if (!isOpen) return null;
@@ -247,7 +248,11 @@ export default function MobileNavigation({
             </div>
           ) : (
             <Link
-              href={`/sign-in?callbackUrl=${encodeURIComponent(pathname)}`}
+              href={`/sign-in?callbackUrl=${encodeURIComponent(
+                pathname && !pathname.startsWith("/sign-in") && !pathname.startsWith("/sign-up")
+                  ? pathname
+                  : "/"
+              )}`}
               onClick={onClose}
               className="w-full flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 font-bold text-xs transition-colors shadow-md"
             >

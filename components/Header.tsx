@@ -32,7 +32,7 @@ const NAV_LINKS = [
 
 export default function Header() {
   const pathname = usePathname();
-  const { data: session } = authClient.useSession();
+  const { data: session, isPending } = authClient.useSession();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -61,7 +61,13 @@ export default function Header() {
   const handleSignOut = async () => {
     await authClient.signOut();
     setUserDropdownOpen(false);
+    window.location.href = "/";
   };
+
+  const safeCallback =
+    pathname && !pathname.startsWith("/sign-in") && !pathname.startsWith("/sign-up")
+      ? pathname
+      : "/";
 
   return (
     <>
@@ -125,25 +131,25 @@ export default function Header() {
             </nav>
 
             {/* 3. Right: Search, Bookmarks, Auth, Mobile Toggle */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               {/* Desktop quick search */}
-              <div className="hidden md:block w-48 lg:w-60 xl:w-72">
+              <div className="hidden md:block w-44 lg:w-56 xl:w-72">
                 <SearchBar size="sm" placeholder="Quick search..." />
               </div>
 
               {/* Mobile search toggle */}
               <button
                 onClick={() => setSearchOpen(!searchOpen)}
-                className="md:hidden p-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-400 hover:text-white transition-colors"
+                className="md:hidden shrink-0 p-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-400 hover:text-white transition-colors"
                 aria-label="Toggle search bar"
               >
                 <Search className="w-4 h-4" />
               </button>
 
-              {/* Saved bookmarks */}
+              {/* Saved bookmarks (desktop & tablet, hidden on tiny mobile) */}
               <Link
                 href="/saved"
-                className="p-2 sm:px-3 sm:py-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-400 hover:text-white transition-colors flex items-center gap-1.5 text-xs font-semibold"
+                className="hidden sm:flex shrink-0 whitespace-nowrap px-3 py-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-400 hover:text-white transition-colors items-center gap-1.5 text-xs font-semibold"
                 title="Saved Bookmarks"
               >
                 <Bookmark className="w-4 h-4 text-accent" />
@@ -151,11 +157,13 @@ export default function Header() {
               </Link>
 
               {/* User Dropdown / Sign-In */}
-              {session?.user ? (
-                <div className="relative" ref={dropdownRef}>
+              {isPending ? (
+                <div className="w-18 sm:w-20 h-7 sm:h-8 rounded-xl bg-zinc-800/40 animate-pulse shrink-0" />
+              ) : session?.user ? (
+                <div className="relative shrink-0" ref={dropdownRef}>
                   <button
                     onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                    className="flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-full bg-[#141414] border border-[#262626] hover:border-accent/40 transition-colors"
+                    className="shrink-0 flex items-center gap-2 p-1 sm:px-2.5 sm:py-1 rounded-full bg-[#141414] border border-[#262626] hover:border-accent/40 transition-colors"
                   >
                     <div className="w-7 h-7 rounded-full overflow-hidden bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
                       {session.user.image ? (
@@ -227,8 +235,8 @@ export default function Header() {
                 </div>
               ) : (
                 <Link
-                  href={`/sign-in?callbackUrl=${encodeURIComponent(pathname)}`}
-                  className="flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all shadow-md"
+                  href={`/sign-in?callbackUrl=${encodeURIComponent(safeCallback)}`}
+                  className="shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-white hover:bg-zinc-200 text-zinc-950 text-xs font-bold transition-all shadow-md"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Sign In</span>
@@ -238,7 +246,7 @@ export default function Header() {
               {/* Mobile Menu Hamburger */}
               <button
                 onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-300 hover:text-white transition-colors"
+                className="lg:hidden shrink-0 p-2 rounded-xl bg-[#141414] hover:bg-[#1c1c1c] border border-[#262626] text-zinc-300 hover:text-white transition-colors"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-4 h-4 sm:w-5 sm:h-5" />

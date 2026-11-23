@@ -3,14 +3,13 @@
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import { authClient } from "@/lib/auth-client";
 import { FaArrowLeft } from "react-icons/fa6";
 
 function GoogleIcon() {
   return (
-    <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <svg className="w-4 h-4" viewBox="0 0 24 24">
       <path
         fill="#4285F4"
         d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -33,7 +32,12 @@ function GoogleIcon() {
 
 function SignUpContent() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/";
+  const rawCallback = searchParams.get("callbackUrl") || "/";
+  const callbackUrl =
+    rawCallback.startsWith("/sign-in") || rawCallback.startsWith("/sign-up")
+      ? "/"
+      : rawCallback;
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -52,71 +56,61 @@ function SignUpContent() {
   };
 
   return (
-    <div className="min-h-[75vh] flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12">
       <motion.div
-        initial={{ opacity: 0, y: 15 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
+        transition={{ duration: 0.25 }}
         className="w-full max-w-sm"
       >
-        {/* Back Link */}
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 text-xs text-[#737373] hover:text-white transition-colors mb-5"
-        >
-          <FaArrowLeft className="w-3 h-3" />
-          <span>Back to Browse</span>
-        </Link>
+        {/* Minimal Back Button */}
+        <div className="mb-4">
+          <Link
+            href="/"
+            className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-200 transition-colors"
+          >
+            <FaArrowLeft className="w-3 h-3" />
+            <span>Back</span>
+          </Link>
+        </div>
 
-        {/* Card */}
-        <div className="rounded-2xl bg-[#121212] border border-[#262626] p-7 shadow-2xl">
-          {/* Heading with Logo */}
-          <div className="text-center space-y-3 mb-7 flex flex-col items-center">
-            <div className="relative h-16 w-56 sm:h-20 sm:w-64 drop-shadow-[0_4px_16px_rgba(229,46,46,0.22)]">
-              <Image
-                src="/logo.png"
-                alt="Desi Hot Pic"
-                fill
-                priority
-                className="object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-white font-display">
-                Create Account
-              </h1>
-              <p className="text-xs text-[#737373] mt-1">
-                Quick registration with your Google account
-              </p>
-            </div>
+        {/* Minimal Stealth Card — No Logos, No Site Branding */}
+        <div className="rounded-2xl bg-[#121212] border border-[#242424] p-6 sm:p-7 shadow-2xl space-y-6">
+          <div className="space-y-1 text-center">
+            <h1 className="text-lg font-bold text-white tracking-tight">
+              Create Account
+            </h1>
+            <p className="text-xs text-zinc-400">
+              Continue with your Google account
+            </p>
           </div>
 
-          {/* Error Message */}
+          {/* Error Notice */}
           {error && (
-            <div className="mb-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs text-center">
               {error}
             </div>
           )}
 
-          {/* Single Simple Google Button */}
+          {/* Clean Minimal Google Button */}
           <motion.button
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
             onClick={handleGoogleSignUp}
             disabled={loading}
-            className="w-full py-3 px-4 rounded-xl bg-white hover:bg-neutral-100 text-[#1f1f1f] font-semibold text-sm flex items-center justify-center gap-3 transition-all shadow-md shadow-white/5 disabled:opacity-60 cursor-pointer"
+            className="w-full py-2.5 px-4 rounded-xl bg-white hover:bg-zinc-100 text-zinc-900 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2.5 transition-all shadow-md shadow-white/5 disabled:opacity-60 cursor-pointer"
           >
             {loading ? (
-              <div className="w-4 h-4 border-2 border-neutral-400 border-t-neutral-800 rounded-full animate-spin" />
+              <div className="w-4 h-4 border-2 border-zinc-400 border-t-zinc-900 rounded-full animate-spin" />
             ) : (
               <GoogleIcon />
             )}
             <span>{loading ? "Connecting..." : "Continue with Google"}</span>
           </motion.button>
 
-          {/* 18+ Disclaimer */}
-          <div className="mt-6 pt-5 border-t border-[#222] text-center text-[10px] text-[#555] leading-relaxed">
-            By continuing, you confirm that you are at least 18 years old.
+          {/* Minimal Discreet Footer */}
+          <div className="pt-2 border-t border-[#1e1e1e] text-center text-[11px] text-zinc-500">
+            Secure registration &bull; 18+ only
           </div>
         </div>
       </motion.div>
@@ -128,8 +122,8 @@ export default function SignUpPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-[75vh] flex items-center justify-center">
-          <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="w-7 h-7 border-2 border-accent border-t-transparent rounded-full animate-spin" />
         </div>
       }
     >
