@@ -37,11 +37,12 @@ const CATEGORIES = [
 const VIDEO_PROVIDERS = [
   "streamtape",
   "vidara",
+  "hls",
+  "direct",
   "watchadsontape",
   "luluvdo",
   "mixdrop",
   "doodstream",
-  "direct",
 ];
 
 interface PostFormProps {
